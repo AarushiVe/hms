@@ -1,0 +1,167 @@
+:root {
+  --bg: #f5f6f8;
+  --text: #1f2937;
+  --sidebar: #2f3e4f;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --border: #d9dee5;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #eef2f6;
+}
+
+.auth-art {
+  background: #2f3e4f;
+}
+
+.auth-blob,
+.auth-blob-2,
+.auth-blob-3 {
+  display: none;
+}
+
+.auth-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 430px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: none;
+  background: var(--card);
+}
+
+.auth-title {
+  font-weight: 600;
+}
+
+.btn-gradient {
+  border: 1px solid #0d6efd;
+  color: #fff;
+  background: #0d6efd;
+}
+
+.btn-gradient:hover {
+  color: #fff;
+  background: #0b5ed7;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 230px 1fr;
+}
+
+.side-nav {
+  background: var(--sidebar);
+  color: #e8edf3;
+  padding: 1rem;
+}
+
+.side-item {
+  border: 0;
+  background: transparent;
+  color: #e8edf3;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+  border-radius: 6px;
+  margin-bottom: 0.3rem;
+}
+
+.side-item.active,
+.side-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.main-panel {
+  padding: 1rem;
+}
+
+.top-strip {
+  background: var(--card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.stat-card {
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+}
+
+.bg-grad-1,
+.bg-grad-2,
+.bg-grad-3,
+.bg-grad-4 {
+  background: #4b5563;
+}
+
+.widget {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.fake-chart {
+  height: 220px;
+  border-radius: 6px;
+  background: repeating-linear-gradient(to right, #eef2f6 0 1px, transparent 1px 45px),
+    repeating-linear-gradient(to bottom, #eef2f6 0 1px, transparent 1px 40px),
+    #fff;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.line.one,
+.line.two {
+  display: none;
+}
+
+.metric-box {
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: none;
+  padding: 1rem;
+}
+
+.table-wrap {
+  max-height: 340px;
+  overflow: auto;
+}
+
+@media (max-width: 992px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .side-nav {
+    display: none;
+  }
+
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-art {
+    display: none;
+  }
+}

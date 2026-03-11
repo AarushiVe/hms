@@ -1,13 +1,316 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HMS Frontend</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hospital Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/static/css/style.css" rel="stylesheet" />
   </head>
-  <body class="bg-light">
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+  <body>
+    {% raw %}
+    <div id="app">
+      <div v-if="!auth.token" class="auth-shell">
+        <div class="auth-art">
+          <div class="auth-blob"></div>
+          <div class="auth-blob-2"></div>
+          <div class="auth-blob-3"></div>
+        </div>
+
+        <div class="auth-panel">
+          <div class="card auth-card">
+            <div class="card-body p-4 p-md-5">
+              <h3 class="auth-title mb-4">Hospital Management</h3>
+
+              <div class="mb-4">
+                <button class="btn btn-sm me-2" :class="publicPage === 'login' ? 'btn-dark' : 'btn-outline-dark'" @click="goPublic('login')">Login</button>
+                <button class="btn btn-sm" :class="publicPage === 'register' ? 'btn-dark' : 'btn-outline-dark'" @click="goPublic('register')">Register (Patient)</button>
+              </div>
+
+              <div v-if="publicPage === 'login'">
+                <div class="mb-3">
+                  <label class="form-label">Username</label>
+                  <input class="form-control form-control-lg" v-model="loginForm.username" placeholder="Enter username" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Password</label>
+                  <input type="password" class="form-control form-control-lg" v-model="loginForm.password" placeholder="Enter password" />
+                </div>
+                <button class="btn btn-gradient btn-lg w-100" @click="login">LOGIN</button>
+                <p class="text-muted mt-3 mb-0">New patient? <a href="#" @click.prevent="goPublic('register')">Create your account</a></p>
+              </div>
+
+              <div v-else>
+                <div class="mb-2">
+                  <label class="form-label">Full Name</label>
+                  <input class="form-control" v-model="registerForm.name" placeholder="Your full name" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Username</label>
+                  <input class="form-control" v-model="registerForm.username" placeholder="Choose username" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Email</label>
+                  <input class="form-control" v-model="registerForm.email" placeholder="example@mail.com" />
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Phone</label>
+                  <input class="form-control" v-model="registerForm.phone" placeholder="Phone" />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Password</label>
+                  <input type="password" class="form-control" v-model="registerForm.password" placeholder="Create password" />
+                </div>
+                <button class="btn btn-gradient w-100" @click="register">REGISTER</button>
+                <p class="text-muted mt-3 mb-0">Already have an account? <a href="#" @click.prevent="goPublic('login')">Go to login</a></p>
+              </div>
+
+              <div v-if="message" class="alert alert-info mt-3 py-2">{{ message }}</div>
+              <div v-if="error" class="alert alert-danger mt-3 py-2">{{ error }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="app-shell">
+        <aside class="side-nav">
+          <h5 class="mb-4">HMS Panel</h5>
+          <div class="small text-uppercase opacity-75 mb-2">Role</div>
+          <div class="mb-4 fw-semibold text-capitalize">{{ auth.user.role }}</div>
+
+          <button class="side-item active">Dashboard</button>
+          <button class="side-item" v-if="auth.user.role === 'patient'">Doctors</button>
+          <button class="side-item" v-if="auth.user.role === 'patient'">Appointments</button>
+          <button class="side-item" v-if="auth.user.role === 'doctor'">Availability</button>
+          <button class="side-item" v-if="auth.user.role === 'admin'">Manage Doctors</button>
+          <button class="side-item" v-if="auth.user.role === 'admin'">System Search</button>
+          <button class="side-item mt-4" @click="logout">Logout</button>
+        </aside>
+
+        <main class="main-panel">
+          <div class="top-strip p-3 d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <div class="text-muted small">Welcome back</div>
+              <div class="h5 mb-0">{{ auth.user.name }}</div>
+            </div>
+            <span class="badge text-bg-dark text-uppercase">{{ auth.user.role }}</span>
+          </div>
+
+          <section v-if="auth.user.role === 'admin'">
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-1"><div class="card-body"><small>Total Doctors</small><h3>{{ admin.summary.doctors || 0 }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-2"><div class="card-body"><small>Total Patients</small><h3>{{ admin.summary.patients || 0 }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-3"><div class="card-body"><small>Appointments</small><h3>{{ admin.summary.appointments || 0 }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-4"><div class="card-body"><small>Today</small><h3>{{ admin.summary.today_appointments || 0 }}</h3></div></div></div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-lg-8">
+                <div class="card widget"><div class="card-body">
+                  <h6 class="mb-3">Hospital Activity Trend</h6>
+                  <div class="fake-chart"><div class="line one"></div><div class="line two"></div></div>
+                </div></div>
+              </div>
+              <div class="col-lg-4">
+                <div class="metric-box mb-3"><div class="text-muted small">Active Doctors</div><div class="h3 mb-0">{{ activeDoctorsCount }}</div></div>
+                <div class="metric-box"><div class="text-muted small">Recent Search Matches</div><div class="h3 mb-0">{{ admin.searchResult.doctors.length + admin.searchResult.patients.length }}</div></div>
+              </div>
+            </div>
+
+            <div class="card widget mb-3"><div class="card-body">
+              <h6>Add Doctor</h6>
+              <div class="row g-2">
+                <div class="col-md-3"><input class="form-control" placeholder="Username" v-model="admin.newDoctor.username" /></div>
+                <div class="col-md-3"><input class="form-control" placeholder="Password" v-model="admin.newDoctor.password" /></div>
+                <div class="col-md-3"><input class="form-control" placeholder="Name" v-model="admin.newDoctor.name" /></div>
+                <div class="col-md-2"><input class="form-control" placeholder="Specialization" v-model="admin.newDoctor.specialization" /></div>
+                <div class="col-md-1"><button class="btn btn-dark w-100" @click="createDoctor">Add</button></div>
+              </div>
+            </div></div>
+
+            <div class="card widget mb-3"><div class="card-body">
+              <h6>Create Doctor Slot (Admin)</h6>
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <select class="form-select" v-model.number="admin.slot.doctor_id">
+                    <option :value="null">Select doctor</option>
+                    <option v-for="d in admin.doctors" :key="d.id" :value="d.id">{{ d.name }} ({{ d.specialization }})</option>
+                  </select>
+                </div>
+                <div class="col-md-2"><input type="date" class="form-control" v-model="admin.slot.date" /></div>
+                <div class="col-md-2"><input type="time" step="1800" class="form-control" v-model="admin.slot.start_time" /></div>
+                <div class="col-md-2"><input type="time" step="1800" class="form-control" v-model="admin.slot.end_time" /></div>
+                <div class="col-md-2">
+                  <select class="form-select" v-model="admin.slot.is_available">
+                    <option :value="true">Available</option>
+                    <option :value="false">Not Available</option>
+                  </select>
+                </div>
+                <div class="col-md-1"><button class="btn btn-primary w-100" @click="createDoctorSlot">Save</button></div>
+              </div>
+            </div></div>
+
+            <div class="card widget"><div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Doctors</h6>
+                <div class="input-group" style="max-width: 380px;">
+                  <input class="form-control" v-model="admin.searchQuery" placeholder="Search doctor/patient" />
+                  <button class="btn btn-outline-secondary" @click="adminSearch">Search</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table class="table table-sm align-middle">
+                  <thead><tr><th>Name</th><th>Specialization</th><th>Status</th><th></th></tr></thead>
+                  <tbody>
+                    <tr v-for="d in admin.doctors" :key="d.id">
+                      <td>{{ d.name }}</td>
+                      <td>{{ d.specialization }}</td>
+                      <td><span class="badge" :class="d.is_active ? 'text-bg-success' : 'text-bg-secondary'">{{ d.is_active ? 'Active' : 'Blocked' }}</span></td>
+                      <td><button class="btn btn-sm btn-outline-dark" @click="toggleUser(d)">{{ d.is_active ? 'Block' : 'Unblock' }}</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div></div>
+          </section>
+
+          <section v-if="auth.user.role === 'doctor'">
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-1"><div class="card-body"><small>All Appointments</small><h3>{{ doctor.appointments.length }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-2"><div class="card-body"><small>Completed</small><h3>{{ doctorCompletedCount }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-3"><div class="card-body"><small>Booked</small><h3>{{ doctorBookedCount }}</h3></div></div></div>
+            </div>
+
+            <div class="card widget mb-3"><div class="card-body">
+              <h6>Set Availability (Next 7 Days)</h6>
+              <div class="row g-2">
+                <div class="col-md-3"><input type="date" class="form-control" v-model="doctor.availability.date" /></div>
+                <div class="col-md-2"><input type="time" step="1800" class="form-control" v-model="doctor.availability.start_time" /></div>
+                <div class="col-md-2"><input type="time" step="1800" class="form-control" v-model="doctor.availability.end_time" /></div>
+                <div class="col-md-2"><select class="form-select" v-model="doctor.availability.is_available"><option :value="true">Available</option><option :value="false">Not Available</option></select></div>
+                <div class="col-md-2"><button class="btn btn-dark w-100" @click="saveAvailability">Save</button></div>
+              </div>
+            </div></div>
+
+            <div class="card widget"><div class="card-body">
+              <h6>Appointments</h6>
+              <div class="table-wrap">
+                <table class="table table-sm align-middle">
+                  <thead><tr><th>ID</th><th>Date</th><th>Time</th><th>Patient</th><th>Status</th><th>Action</th></tr></thead>
+                  <tbody>
+                    <tr v-for="a in doctor.appointments" :key="a.id">
+                      <td>{{ a.id }}</td><td>{{ a.date }}</td><td>{{ a.time }}</td><td>{{ a.patient_name }}</td>
+                      <td><span class="badge" :class="statusBadge(a.status)">{{ a.status }}</span></td>
+                      <td class="d-flex gap-1">
+                        <button class="btn btn-sm btn-success" @click="setDoctorStatus(a.id, 'completed')">Complete</button>
+                        <button class="btn btn-sm btn-secondary" @click="setDoctorStatus(a.id, 'cancelled')">Cancel</button>
+                        <button class="btn btn-sm btn-outline-dark" @click="openTreatment(a)">Treatment</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div></div>
+
+            <div class="card widget mt-3" v-if="doctor.treatment.appointment_id"><div class="card-body">
+              <h6>Treatment for Appointment #{{ doctor.treatment.appointment_id }}</h6>
+              <div class="row g-2">
+                <div class="col-md-4"><input class="form-control" placeholder="Diagnosis" v-model="doctor.treatment.diagnosis" /></div>
+                <div class="col-md-4"><input class="form-control" placeholder="Prescription" v-model="doctor.treatment.prescription" /></div>
+                <div class="col-md-4"><input class="form-control" placeholder="Notes" v-model="doctor.treatment.notes" /></div>
+              </div>
+              <button class="btn btn-dark btn-sm mt-2" @click="saveTreatment">Save Treatment</button>
+            </div></div>
+          </section>
+
+          <section v-if="auth.user.role === 'patient'">
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-1"><div class="card-body"><small>Upcoming Visits</small><h3>{{ patient.dashboard.upcoming.length }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-2"><div class="card-body"><small>Completed Visits</small><h3>{{ patient.history.length }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-3"><div class="card-body"><small>Doctors Available</small><h3>{{ patient.doctors.length }}</h3></div></div></div>
+              <div class="col-sm-6 col-lg-3"><div class="card stat-card bg-grad-4"><div class="card-body"><small>Notifications</small><h3>{{ notifications.length }}</h3></div></div></div>
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-lg-8">
+                <div class="card widget"><div class="card-body">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Find Doctor & Book Appointment</h6>
+                    <button class="btn btn-outline-dark btn-sm" @click="triggerExport">Export Treatments CSV</button>
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-md-5"><input class="form-control" placeholder="Filter by specialization" v-model="patient.specializationFilter" /></div>
+                    <div class="col-md-3"><input type="date" class="form-control" v-model="patient.booking.date" /></div>
+                    <div class="col-md-2"><input type="time" step="1800" class="form-control" v-model="patient.booking.time" /></div>
+                    <div class="col-md-2"><button class="btn btn-dark w-100" @click="loadPatientDoctors">Search</button></div>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="table table-sm align-middle">
+                      <thead><tr><th>Doctor</th><th>Specialization</th><th>Profile</th><th>Available Slots</th><th></th></tr></thead>
+                      <tbody>
+                        <tr v-for="d in patient.doctors" :key="d.id">
+                          <td>{{ d.name }}</td>
+                          <td>{{ d.specialization }}</td>
+                          <td class="text-muted small">{{ d.bio || 'No profile details yet' }}</td>
+                          <td class="small">
+                            <span v-if="!d.availability || d.availability.filter(x => x.is_available).length === 0" class="text-muted">No slots</span>
+                            <span v-else>
+                              {{ d.availability.filter(x => x.is_available).slice(0,2).map(x => x.date + ' ' + x.start_time + '-' + x.end_time).join(', ') }}
+                            </span>
+                          </td>
+                          <td><button class="btn btn-sm btn-primary" :disabled="!d.availability || d.availability.filter(x => x.is_available).length === 0" @click="book(d.id)">Book Slot</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div></div>
+              </div>
+
+              <div class="col-lg-4">
+                <div class="metric-box mb-3">
+                  <div class="text-muted small mb-2">Upcoming Appointments</div>
+                  <div v-if="patient.dashboard.upcoming.length === 0" class="text-muted">No upcoming appointments</div>
+                  <div v-for="a in patient.dashboard.upcoming.slice(0,4)" :key="a.id" class="border rounded p-2 mb-2">
+                    <div class="fw-semibold">{{ a.date }} {{ a.time }}</div>
+                    <div class="small text-muted">Dr. {{ a.doctor }} | {{ a.status }}</div>
+                    <button class="btn btn-sm btn-outline-danger mt-1" @click="cancelAppointment(a.id)">Cancel</button>
+                  </div>
+                </div>
+
+                <div class="metric-box">
+                  <div class="text-muted small mb-2">Recent Alerts</div>
+                  <div v-if="notifications.length === 0" class="text-muted">No notifications</div>
+                  <div v-for="n in notifications.slice(0,4)" :key="n.id" class="small border-bottom py-2">{{ n.message }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card widget"><div class="card-body">
+              <h6>Treatment History</h6>
+              <div class="table-wrap">
+                <table class="table table-sm align-middle">
+                  <thead><tr><th>Date</th><th>Doctor</th><th>Diagnosis</th><th>Prescription</th></tr></thead>
+                  <tbody>
+                    <tr v-for="h in patient.history" :key="h.appointment_id">
+                      <td>{{ h.date }}</td>
+                      <td>{{ h.doctor }}</td>
+                      <td>{{ h.diagnosis || '-' }}</td>
+                      <td>{{ h.prescription || '-' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div></div>
+          </section>
+
+          <div v-if="message" class="alert alert-info mt-3">{{ message }}</div>
+          <div v-if="error" class="alert alert-danger mt-3">{{ error }}</div>
+        </main>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.4.31/dist/vue.global.prod.js"></script>
+    <script src="/static/js/app.js"></script>
+    {% endraw %}
   </body>
 </html>
